@@ -47,7 +47,5 @@ if(buttonsDelete.length > 0){
 }
 // End Deteted Item
 
-// Upload Image
 
-//End Upload Image
 

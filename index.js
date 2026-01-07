@@ -5,6 +5,7 @@ const flash = require("express-flash");
 const cookieParser = require("cookie-parser");
 const session = require("express-session");
 
+
 require('dotenv').config()
 const route = require("./routes/client/index.router");
 
@@ -33,6 +34,7 @@ app.set('view engine', 'pug')
 app.use(cookieParser('RAMDOMKEY'));
 app.use(session({ cookie: { maxAge: 60000 } }));
 app.use(flash());
+
 // End Flash
 
 app.use(express.static(`${__dirname}/public`))
@@ -43,9 +45,6 @@ app.locals.prefixAdmin = systemConfig.prefixAdmin;
 // Set up route
 routeAdmin(app);
 route(app);
-
-
-
 
 app.listen(port, () => {
     console.log(`This is URL ${port}`)

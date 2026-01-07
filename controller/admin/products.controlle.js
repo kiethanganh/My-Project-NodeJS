@@ -3,6 +3,8 @@ const fillterStatusHelper = require("../../helpers/fillterStatus");
 const searchHelper = require("../../helpers/search");
 const paginationHelper = require("../../helpers/pagination");
 const systemConfig = require("../../config/system")
+const createTreeHelper = require("../../helpers/createTree")
+const ProductCategorySchema = require("../../models/products.category.model")
 
 // [GET] /admin/products
 module.exports.index = async (req, res) => {
@@ -42,10 +44,18 @@ module.exports.index = async (req, res) => {
    }, req.query, countProducts)
    // End phân trang
 
+   // Sort
+   let sort = {}
 
+   if(req.query.sortKey && req.query.sortValue){
+      sort[req.query.sortKey] = req.query.sortValue
+   } else {
+      sort.position = "desc"
+   }
+   // End Sort
 
    const products = await Product.find(find)
-   .sort({ position: "desc"})
+   .sort(sort)
    .limit(objectPagination.limitItem)
    .skip(objectPagination.skip);
    // console.log(products);
@@ -118,10 +128,10 @@ module.exports.deleteItem = async (req, res) => {
    const id = req.params.id;
 
    // xóa vĩnh viễn
-   // await Product.deleteOne({_id:id})
+   await Product.deleteOne({_id:id})
 
    // xóa mềm
-   await Product.updateOne({_id:id}, {deleted:true});
+   // await Product.updateOne({_id:id}, {deleted:true});
 
     req.flash("success",`Xóa thành công thành công sản phẩm !`);
 
@@ -131,9 +141,39 @@ module.exports.deleteItem = async (req, res) => {
 // [GET] /admin/products/create
 module.exports.create = async (req, res) => {
 
+   const find = {
+      deleted: false
+   }
+
+   function createTree(arr, parentId = "") {
+   const tree = [];
+
+   arr.forEach((item) => {
+      if (item.parent_id === parentId) {
+         const newItem = item;
+
+         const children = createTree(arr, item.id);
+
+         if (children.length > 0) {
+         newItem.children = children;
+         }
+
+         tree.push(newItem);
+      }
+   });
+
+   return tree;
+   }
+
+   const category = await ProductCategorySchema.find(find);
+
+   // Nhúng mixins createTreeHelper
+   const newCategory = createTreeHelper.tree(category)
+
+
    res.render("admin/pages/products/create.pug", {
       pageTitle: "Danh sách sản phẩm",
-   
+      category: newCategory
    })
 }
 
@@ -157,7 +197,10 @@ module.exports.createPost = async (req, res) => {
    const product = new Product(req.body)
    await product.save()
 
+   req.flash("success","Tạo mới thành công thành công !");
+  
    res.redirect(`${systemConfig.prefixAdmin}/products`)
+   
 }
 
 // [GET] /admin/products/edit
@@ -170,11 +213,41 @@ module.exports.edit = async (req, res) => {
    }
 
    const product = await Product.findOne(find)
+
+   const findd = {
+      deleted: false
+   }
+
+   function createTree(arr, parentId = "") {
+   const tree = [];
+
+   arr.forEach((item) => {
+      if (item.parent_id === parentId) {
+         const newItem = item;
+
+         const children = createTree(arr, item.id);
+
+         if (children.length > 0) {
+         newItem.children = children;
+         }
+
+         tree.push(newItem);
+      }
+   });
+
+   return tree;
+   }
+
+   const category = await ProductCategorySchema.find(findd);
+
+   // Nhúng mixins createTreeHelper
+   const newCategory = createTreeHelper.tree(category)
    
 
    res.render("admin/pages/products/edit.pug", {
       pageTitle: "Chỉnh sửa sản phẩm",
-      product: product
+      product: product,
+      category: newCategory
    
    })
    } catch (error){
